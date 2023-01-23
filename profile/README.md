@@ -1,4 +1,4 @@
-# Integral Envision <a href='https://github.com/IntegralEnvision'><img src='logo.png' align="right" height="120" /></a>
+# Integral Envision <a href='https://github.com/IntegralEnvision'><img src='https://github.com/IntegralEnvision/.github/blob/main/profile/logo.png' align="right" height="120" /></a>
 
 Welcome to the Integral Envision GitHub Organization!
 
