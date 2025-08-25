@@ -2,6 +2,10 @@
 
 Welcome to the Integral Envision GitHub Organization!
 
+## Shared Resources
+
+This organization provides reusable GitHub Actions workflows for common CI/CD tasks. See the [main README](../README.md) for details on available workflows and how to use them in your repositories.
+
 ## Rules
 
 1. Do not store any non-public data on GitHub.
