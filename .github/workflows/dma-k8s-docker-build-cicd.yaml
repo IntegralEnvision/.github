@@ -90,7 +90,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       
       - name: Set environment variable
-        run: echo "TAG=${GITHUB_SHA:0:7}-${{ inputs.tag_prefix }}-$(date +%s)" >> $GITHUB_ENV
+        run: echo "TAG=${GITHUB_SHA:0:7}-${{ inputs.environment }}-$(date +%s)" >> $GITHUB_ENV
 
       # https://github.com/docker/build-push-action
       - name: Build and push
