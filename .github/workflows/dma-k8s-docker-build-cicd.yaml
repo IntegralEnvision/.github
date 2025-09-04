@@ -26,6 +26,10 @@ on:
         description: 'The -<environment>- portion of the tag which determines the ShinyProxy environment to deploy to.'
         required: true
         type: string
+      build_args:
+        description: 'Additional build arguments to pass to docker build'
+        required: false
+        type: string
     secrets:
       AZURE_CLIENT_ID:
         description: 'Azure Service Principal Client ID'
@@ -88,7 +92,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-      
+
       - name: Set environment variable
         run: echo "TAG=${GITHUB_SHA:0:7}-${{ inputs.environment }}-$(date +%s)" >> $GITHUB_ENV
 
@@ -100,3 +104,5 @@ jobs:
           push: true
           file: ${{ inputs.dockerfile_path }}
           platforms: ${{ inputs.platforms }}
+          build-args: |
+            ${{ inputs.build_args }}

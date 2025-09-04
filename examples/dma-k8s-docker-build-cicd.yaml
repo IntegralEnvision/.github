@@ -18,16 +18,21 @@ jobs:
     with:
       # Required: Your Docker image name
       image_name: "your-app/your-service"
-      
+
       # Optional: Path to Dockerfile (defaults to "Dockerfile")
       dockerfile_path: "Dockerfile"
-      
+
       # Optional: Target platforms (defaults to "linux/amd64")
       platforms: "linux/amd64"
 
       # Required: The environment to deploy to. Must be one of "dev", "test", "prod", or "pub"
       environment: "dev"
-      
+
+      # Optional: Additional build arguments to pass to docker build
+      build_args: |
+        BUILD_ARG_1=value1
+        BUILD_ARG_2=value2
+
     secrets:
       # These secrets must be configured in your repository settings
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
