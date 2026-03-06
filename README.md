@@ -10,40 +10,43 @@ This `.github` repository serves as a centralized location for:
 
 ## Available Workflows
 
-### Docker Image Deployment (`dma-k8s-docker-build-cicd.yaml`)
+### Docker Build CI/CD (`docker-build-cicd.yml`)
 
-A reusable workflow for building and deploying Docker images to Azure Container Registry (ACR). This workflow handles:
-- Azure authentication
+A reusable workflow for building and publishing Docker images to any registry supported by Docker login credentials. This workflow handles:
+- Docker registry authentication
 - Docker image building with multi-platform support
-- Pushing to Azure Container Registry
-- Automatic tagging with commit SHA and timestamps
+- Pushing the image to the configured registry
+- Automatic tagging with the short commit SHA and `latest`
 
 #### Usage
 
 To use this workflow in your repository, create a workflow file (e.g., `.github/workflows/deploy.yml`) with the following content:
 
 ```yaml
-name: Deploy Docker Image
+name: Build and Publish Docker Image
 
 on:
   push:
-    tags:
-      - '**'  # Trigger on any tag push
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  deploy:
-    uses: IntegralEnvision/.github/.github/workflows/dma-k8s-docker-build-cicd.yaml@main
+  docker:
+    uses: IntegralEnvision/.github/.github/workflows/docker-build-cicd.yml@main
     with:
       image_name: "your-app/your-service"
-      registry: "integraldma.azurecr.io"
+      registry: "ghcr.io"
       dockerfile_path: "Dockerfile"  # Optional, defaults to "Dockerfile"
-      platforms: "linux/amd64"      # Optional, defaults to "linux/amd64"
-      tag_prefix: "prod"             # Optional, defaults to "dev"
+      platforms: "linux/amd64"       # Optional, defaults to "linux/amd64"
+      build_args: |
+        BUILD_ARG_1=value1
     secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      REGISTRY_USERNAME: ${{ github.actor }}
+      REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Required Inputs
@@ -51,7 +54,7 @@ jobs:
 | Input | Description | Example |
 |-------|-------------|---------|
 | `image_name` | Docker image name | `"shinyapps/app-flood"` |
-| `registry` | Container registry URL | `"integraldma.azurecr.io"` |
+| `registry` | Container registry hostname | `"ghcr.io"` |
 
 #### Optional Inputs
 
@@ -59,7 +62,7 @@ jobs:
 |-------|-------------|---------|---------|
 | `dockerfile_path` | Path to Dockerfile | `"Dockerfile"` | `"docker/Dockerfile"` |
 | `platforms` | Target platforms for build | `"linux/amd64"` | `"linux/amd64,linux/arm64"` |
-| `tag_prefix` | Prefix for generated tags | `"dev"` | `"prod"` |
+| `build_args` | Multiline Docker build args | `""` | `"FOO=bar"` |
 
 #### Required Secrets
 
@@ -67,41 +70,43 @@ You must configure the following secrets in your repository or organization:
 
 | Secret | Description |
 |--------|-------------|
-| `AZURE_CLIENT_ID` | Azure Service Principal Client ID |
-| `AZURE_CLIENT_SECRET` | Azure Service Principal Client Secret |
-| `AZURE_SUBSCRIPTION_ID` | Azure Subscription ID |
-| `AZURE_TENANT_ID` | Azure Tenant ID |
+| `REGISTRY_USERNAME` | Username for the target registry |
+| `REGISTRY_PASSWORD` | Password or token for the target registry |
+
+#### Outputs
+
+The reusable workflow exposes these outputs:
+
+| Output | Description |
+|--------|-------------|
+| `image_tag` | Short SHA tag, for example `"abc1234"` |
+| `image` | Full SHA-tagged image reference |
+| `latest_image` | Full `latest` image reference |
 
 #### Generated Tags
 
 The workflow automatically generates the following tags for your Docker image:
-- Standard metadata tags (based on git refs)
-- Custom tag: `{COMMIT_SHA:7}-{tag_prefix}-{timestamp}`
+- `{COMMIT_SHA:7}`
+- `latest`
 
-Example: `abc1234-prod-1692975123`
+Example: `abc1234` and `latest`
 
-## Setting Up Azure Authentication
+## Registry Authentication
 
-To use the Docker deployment workflow, you need to create an Azure Service Principal and configure the required secrets.
+To use the Docker build workflow, configure credentials that can push to your target registry.
 
-### 1. Create Azure Service Principal
+### Example: GitHub Container Registry
 
-```bash
-az ad sp create-for-rbac \
-  --name "github-actions-sp" \
-  --role contributor \
-  --scopes /subscriptions/{subscription-id} \
-  --sdk-auth
-```
+For `ghcr.io`, you can typically use:
+- `REGISTRY_USERNAME`: `${{ github.actor }}`
+- `REGISTRY_PASSWORD`: `${{ secrets.GITHUB_TOKEN }}`
 
-### 2. Configure Repository Secrets
+### Configure Repository Secrets
 
 Add the following secrets to your repository (Settings → Secrets and variables → Actions):
 
-- `AZURE_CLIENT_ID`: From the Service Principal output
-- `AZURE_CLIENT_SECRET`: From the Service Principal output  
-- `AZURE_SUBSCRIPTION_ID`: Your Azure subscription ID
-- `AZURE_TENANT_ID`: From the Service Principal output
+- `REGISTRY_USERNAME`: Registry username
+- `REGISTRY_PASSWORD`: Registry password or token
 
 ## Contributing
 
@@ -126,11 +131,14 @@ When adding new reusable workflows:
 ```
 .github/
 ├── workflows/
-│   └── dma-k8s-docker-build-cicd.yaml  # Docker deployment workflow
+│   └── docker-build-cicd.yml           # Generic Docker build/publish workflow
+├── examples/
+│   ├── dma-k8s-docker-build-cicd.yaml  # Legacy example
+│   └── docker-build-cicd.yml           # Generic workflow example
 ├── profile/
-│   ├── README.md                        # Organization profile
-│   └── logo.png                         # Organization logo
-└── README.md                            # This file
+│   ├── README.md                       # Organization profile
+│   └── logo.png                        # Organization logo
+└── README.md                           # This file
 ```
 
 ## Support
@@ -138,5 +146,5 @@ When adding new reusable workflows:
 For questions or issues with these workflows, please:
 1. Check the workflow logs for specific error messages
 2. Verify all required secrets are configured
-3. Ensure your Azure Service Principal has the necessary permissions
+3. Ensure your registry credentials have permission to push images
 4. Open an issue in this repository for workflow-related problems
