@@ -28,11 +28,17 @@ on:
         default: ""
         type: string
     secrets:
-      REGISTRY_USERNAME:
-        description: Username for the target container registry
+      AZURE_CLIENT_ID:
+        description: 'Azure Service Principal Client ID'
         required: true
-      REGISTRY_PASSWORD:
-        description: Password or token for the target container registry
+      AZURE_CLIENT_SECRET:
+        description: 'Azure Service Principal Client Secret'
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        description: 'Azure Subscription ID'
+        required: true
+      AZURE_TENANT_ID:
+        description: 'Azure Tenant ID'
         required: true
     outputs:
       image_tag:
@@ -66,12 +72,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to container registry
-        uses: docker/login-action@v3
+      - name: 'Az CLI login'
+        uses: azure/login@v2
         with:
-          registry: ${{ inputs.registry }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
       - name: Derive image metadata
         id: meta
