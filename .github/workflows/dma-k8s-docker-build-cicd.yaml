@@ -30,6 +30,11 @@ on:
         description: 'Additional build arguments to pass to docker build'
         required: false
         type: string
+      cache_ref:
+        description: 'Optional Buildx registry cache reference. Defaults to <registry>/<image_name>:buildcache'
+        required: false
+        type: string
+        default: ''
     secrets:
       AZURE_CLIENT_ID:
         description: 'Azure Service Principal Client ID'
@@ -100,15 +105,27 @@ jobs:
       - name: Set environment variable
         run: echo "TAG=${GITHUB_SHA:0:7}-${{ inputs.environment }}-$(date +%s)" >> $GITHUB_ENV
 
+      - name: Set cache reference
+        run: |
+          if [ -n "${{ inputs.cache_ref }}" ]; then
+            echo "CACHE_REF=${{ inputs.cache_ref }}" >> $GITHUB_ENV
+          else
+            echo "CACHE_REF=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache" >> $GITHUB_ENV
+          fi
+
       # https://github.com/docker/build-push-action
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
+          context: .
           tags: ${{ steps.meta.outputs.tags }}, ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           push: true
+          pull: true
           file: ${{ inputs.dockerfile_path }}
           platforms: ${{ inputs.platforms }}
           build-args: |
             ${{ inputs.build_args }}
+          cache-from: type=registry,ref=${{ env.CACHE_REF }}
+          cache-to: type=registry,ref=${{ env.CACHE_REF }},mode=max
           # Conditionally add secrets if API_TOKEN is provided
           secrets: ${{ secrets.API_TOKEN && format('api_token={0}', secrets.API_TOKEN) || '' }}
